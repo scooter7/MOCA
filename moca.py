@@ -23,7 +23,7 @@ def summarize_text(text, model="gpt-3.5-turbo", max_tokens=3000):
         {"role": "user", "content": f"Please summarize the following text:\n{text}"}
     ]
     
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model=model,
         messages=messages,
         max_tokens=max_tokens
