@@ -61,7 +61,7 @@ def create_report_with_openai(template_text, notes_text, max_tokens=2048):
             messages=messages,
             max_tokens=max_tokens
         )
-        reports.append(response.choices[0].message['content'].strip())
+        reports.append(response.choices[0].message.content.strip())
 
     return "\n\n".join(reports)
 
