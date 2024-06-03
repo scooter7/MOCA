@@ -5,9 +5,9 @@ from io import BytesIO
 from fpdf import FPDF
 
 # Function to extract text from PDF using pdfplumber
-def extract_text_from_pdf(pdf_file):
+def extract_text_from_pdf(uploaded_file):
     text = []
-    with pdfplumber.open(pdf_file) as pdf:
+    with pdfplumber.open(BytesIO(uploaded_file.read())) as pdf:
         for page in pdf.pages:
             text.append(page.extract_text())
     return "\n".join(text)
