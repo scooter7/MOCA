@@ -9,7 +9,7 @@ from langchain.schema import HumanMessage
 # Initialize the LangChain OpenAI Chat model with the API key from Streamlit secrets
 chat_model = ChatOpenAI(
     temperature=0,
-    model_name="gpt-3.5-turbo-0125",
+    model_name="gpt-3.5-turbo",
     openai_api_key=st.secrets["openai"]["api_key"]
 )
 
