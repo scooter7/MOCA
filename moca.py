@@ -16,17 +16,42 @@ def extract_text_from_pdf(uploaded_file):
             text.append(page.extract_text())
     return "\n".join(text)
 
+# Function to summarize content to fit within token limits
+def summarize_text(text, model="gpt-3.5-turbo", max_tokens=3000):
+    messages = [
+        {"role": "system", "content": "You are a summarizer."},
+        {"role": "user", "content": f"Please summarize the following text:\n{text}"}
+    ]
+    
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens
+    )
+    return response.choices[0].message['content'].strip()
+
 # Function to use OpenAI to create a cohesive report
 def create_report_with_openai(template_text, notes_text):
+    # Check if the combined length of template and notes exceeds the token limit
+    if len(template_text.split()) + len(notes_text.split()) > 8000:
+        template_text = summarize_text(template_text)
+        notes_text = summarize_text(notes_text)
+
+    prompt = (
+        f"Template:\n{template_text}\n\n"
+        f"Notes:\n{notes_text}\n\n"
+        "Please generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."
+    )
+    
     messages = [
         {"role": "system", "content": "You are an assistant that helps generate cohesive reports by placing notes into the appropriate sections of the template and adding any necessary additional language."},
-        {"role": "user", "content": f"Template:\n{template_text}\n\nNotes:\n{notes_text}\n\nPlease generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."}
+        {"role": "user", "content": prompt}
     ]
     
     response = openai.chat.completions.create(
         model="gpt-3.5-turbo",  # Use the appropriate model
         messages=messages,
-        max_tokens=1500  # Adjust max_tokens based on your needs
+        max_tokens=3000  # Adjust max_tokens based on your needs
     )
     return response.choices[0].message['content'].strip()
 
