@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 import pdfplumber
 from io import BytesIO
 from fpdf import FPDF
@@ -13,7 +14,6 @@ def extract_text_from_pdf(pdf_file):
 
 # Function to identify sections in the template
 def identify_sections(template_text):
-    # Assuming headers are in all caps or followed by a newline
     headers = re.findall(r'([A-Z ]+)\n', template_text)
     return headers
 
