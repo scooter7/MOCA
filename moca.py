@@ -46,12 +46,12 @@ class PDF(FPDF):
 
     def chapter_title(self, title):
         self.set_font('Arial', 'B', 12)
-        self.cell(0, 10, title, 0, 1, 'L')
+        self.cell(0, 10, title.encode('latin-1', 'replace').decode('latin-1'), 0, 1, 'L')
         self.ln(10)
 
     def chapter_body(self, body):
         self.set_font('Arial', '', 12)
-        self.multi_cell(0, 10, body)
+        self.multi_cell(0, 10, body.encode('latin-1', 'replace').decode('latin-1'))
         self.ln()
 
 def create_pdf(text):
