@@ -5,6 +5,7 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
+# Function to extract text from PDF incrementally
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PdfReader(pdf_file)
     text = []
@@ -12,10 +13,12 @@ def extract_text_from_pdf(pdf_file):
         text.append(page.extract_text())
     return "\n".join(text)
 
+# Function to identify sections in the template
 def identify_sections(template_text):
     headers = re.findall(r'([A-Z ]+)\n', template_text)
     return headers
 
+# Function to match notes to sections
 def match_notes_to_sections(headers, notes_text):
     sections = {header: "" for header in headers}
     current_header = None
@@ -29,18 +32,21 @@ def match_notes_to_sections(headers, notes_text):
     
     return sections
 
+# Function to merge notes into the template
 def merge_notes_into_template(template_text, notes_sections):
     merged_text = template_text
     for header, notes in notes_sections.items():
         merged_text = merged_text.replace(header, header + "\n" + notes)
     return merged_text
 
+# Function to create a downloadable PDF
 def create_pdf(text):
     output = BytesIO()
     c = canvas.Canvas(output, pagesize=letter)
     width, height = letter
 
-    for line in text.split("\n"):
+    lines = text.split("\n")
+    for line in lines:
         c.drawString(72, height - 72, line)
         height -= 15
         if height < 72:  # Create new page if the current page is filled
@@ -51,9 +57,11 @@ def create_pdf(text):
     output.seek(0)
     return output
 
+# Streamlit app layout
 st.title("Report Generator")
 st.write("Upload the template report format and report notes files.")
 
+# File upload
 template_file = st.file_uploader("Upload Template Report Format (PDF)", type="pdf")
 notes_file = st.file_uploader("Upload Report Notes (PDF)", type="pdf")
 
