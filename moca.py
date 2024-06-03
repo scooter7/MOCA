@@ -1,17 +1,12 @@
 import streamlit as st
 import re
 import pdfplumber
+import openai
 from io import BytesIO
 from fpdf import FPDF
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage
 
-# Initialize the LangChain OpenAI Chat model with the API key from Streamlit secrets
-chat_model = ChatOpenAI(
-    temperature=0,
-    model_name="gpt-3.5-turbo",
-    openai_api_key=st.secrets["openai"]["api_key"]
-)
+# Set up OpenAI API key from Streamlit secrets
+openai.api_key = st.secrets["openai"]["api_key"]
 
 # Function to extract text from PDF using pdfplumber
 def extract_text_from_pdf(uploaded_file):
@@ -21,7 +16,7 @@ def extract_text_from_pdf(uploaded_file):
             text.append(page.extract_text())
     return "\n".join(text)
 
-# Function to use OpenAI via LangChain to create a cohesive report
+# Function to use OpenAI to create a cohesive report
 def create_report_with_openai(template_text, notes_text):
     prompt = (
         f"Template:\n{template_text}\n\n"
@@ -29,9 +24,12 @@ def create_report_with_openai(template_text, notes_text):
         "Please generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."
     )
     
-    messages = [HumanMessage(content=prompt)]
-    response = chat_model(messages)
-    return response.content.strip()
+    response = openai.Completion.create(
+        engine="text-davinci-003",  # Use the appropriate engine
+        prompt=prompt,
+        max_tokens=1500  # Adjust max_tokens based on your needs
+    )
+    return response.choices[0].text.strip()
 
 # Function to create a downloadable PDF using fpdf
 class PDF(FPDF):
