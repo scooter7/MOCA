@@ -17,7 +17,7 @@ def extract_text_from_pdf(uploaded_file):
     return "\n".join(text)
 
 # Function to split text into chunks
-def split_text_into_chunks(text, max_tokens=3000):
+def split_text_into_chunks(text, max_tokens=2048):
     words = text.split()
     chunks = []
     current_chunk = []
@@ -38,7 +38,7 @@ def split_text_into_chunks(text, max_tokens=3000):
     return chunks
 
 # Function to use OpenAI to process each chunk and generate report
-def create_report_with_openai(template_text, notes_text, max_tokens=3000):
+def create_report_with_openai(template_text, notes_text, max_tokens=2048):
     template_chunks = split_text_into_chunks(template_text, max_tokens)
     notes_chunks = split_text_into_chunks(notes_text, max_tokens)
 
