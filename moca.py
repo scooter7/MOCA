@@ -1,15 +1,15 @@
 import streamlit as st
 import re
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfReader, PdfWriter
 from io import BytesIO
 from reportlab.pdfgen import canvas
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
-    pdf_reader = PdfFileReader(pdf_file)
+    pdf_reader = PdfReader(pdf_file)
     text = ""
-    for page in range(pdf_reader.getNumPages()):
-        text += pdf_reader.getPage(page).extract_text()
+    for page in pdf_reader.pages:
+        text += page.extract_text()
     return text
 
 # Function to identify sections in the template
