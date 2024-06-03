@@ -16,34 +16,54 @@ def extract_text_from_pdf(uploaded_file):
             text.append(page.extract_text())
     return "\n".join(text)
 
-# Function to summarize text using OpenAI
-def summarize_text(text, model="gpt-3.5-turbo", max_tokens=3000):
-    response = openai.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": f"Please summarize the following text:\n{text}"}],
-        max_tokens=max_tokens
-    )
-    return response.choices[0].message['content'].strip()
-
-# Function to create a cohesive report using OpenAI
-def create_report_with_openai(template_text, notes_text, max_tokens=3000):
-    # Summarize template and notes if necessary
-    if len(template_text.split()) > 4000:
-        template_text = summarize_text(template_text, max_tokens=max_tokens)
-    if len(notes_text.split()) > 4000:
-        notes_text = summarize_text(notes_text, max_tokens=max_tokens)
-
-    messages = [
-        {"role": "system", "content": "You are an assistant that helps generate cohesive reports by placing notes into the appropriate sections of the template and adding any necessary additional language."},
-        {"role": "user", "content": f"Template:\n{template_text}\n\nNotes:\n{notes_text}\n\nPlease generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."}
-    ]
+# Function to split text into chunks
+def split_text_into_chunks(text, max_tokens=3000):
+    words = text.split()
+    chunks = []
+    current_chunk = []
+    current_length = 0
     
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",  # Use the appropriate model
-        messages=messages,
-        max_tokens=max_tokens
-    )
-    return response.choices[0].message['content'].strip()
+    for word in words:
+        word_length = len(word) + 1  # +1 for the space
+        if current_length + word_length > max_tokens:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = []
+            current_length = 0
+        current_chunk.append(word)
+        current_length += word_length
+
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+    
+    return chunks
+
+# Function to use OpenAI to process each chunk and generate report
+def create_report_with_openai(template_text, notes_text, max_tokens=3000):
+    template_chunks = split_text_into_chunks(template_text, max_tokens)
+    notes_chunks = split_text_into_chunks(notes_text, max_tokens)
+
+    reports = []
+
+    for template_chunk, notes_chunk in zip(template_chunks, notes_chunks):
+        prompt = (
+            f"Template:\n{template_chunk}\n\n"
+            f"Notes:\n{notes_chunk}\n\n"
+            "Please generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."
+        )
+        
+        messages = [
+            {"role": "system", "content": "You are an assistant that helps generate cohesive reports by placing notes into the appropriate sections of the template and adding any necessary additional language."},
+            {"role": "user", "content": prompt}
+        ]
+        
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",  # Use the appropriate model
+            messages=messages,
+            max_tokens=max_tokens
+        )
+        reports.append(response.choices[0].message['content'].strip())
+
+    return "\n\n".join(reports)
 
 # Function to create a downloadable PDF using fpdf
 class PDF(FPDF):
