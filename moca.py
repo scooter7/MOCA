@@ -1,8 +1,12 @@
 import streamlit as st
 import re
 import pdfplumber
+import openai
 from io import BytesIO
 from fpdf import FPDF
+
+# Set up OpenAI API key from Streamlit secrets
+openai.api_key = st.secrets["openai"]["api_key"]
 
 # Function to extract text from PDF using pdfplumber
 def extract_text_from_pdf(uploaded_file):
@@ -12,31 +16,20 @@ def extract_text_from_pdf(uploaded_file):
             text.append(page.extract_text())
     return "\n".join(text)
 
-# Function to identify sections in the template
-def identify_sections(template_text):
-    headers = re.findall(r'([A-Z ]+)\n', template_text)
-    return headers
-
-# Function to match notes to sections
-def match_notes_to_sections(headers, notes_text):
-    sections = {header: "" for header in headers}
-    current_header = None
-
-    for line in notes_text.split("\n"):
-        header_match = re.match(r'([A-Z ]+)', line)
-        if header_match and header_match.group(1) in headers:
-            current_header = header_match.group(1)
-        elif current_header:
-            sections[current_header] += line + "\n"
+# Function to use OpenAI to create a cohesive report
+def create_report_with_openai(template_text, notes_text):
+    prompt = (
+        f"Template:\n{template_text}\n\n"
+        f"Notes:\n{notes_text}\n\n"
+        "Please generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."
+    )
     
-    return sections
-
-# Function to merge notes into the template
-def merge_notes_into_template(template_text, notes_sections):
-    merged_text = template_text
-    for header, notes in notes_sections.items():
-        merged_text = merged_text.replace(header, header + "\n" + notes)
-    return merged_text
+    response = openai.Completion.create(
+        engine="text-davinci-003", # Use the appropriate engine
+        prompt=prompt,
+        max_tokens=1500  # Adjust max_tokens based on your needs
+    )
+    return response.choices[0].text.strip()
 
 # Function to create a downloadable PDF using fpdf
 class PDF(FPDF):
@@ -81,13 +74,10 @@ if template_file and notes_file:
     try:
         template_text = extract_text_from_pdf(template_file)
         notes_text = extract_text_from_pdf(notes_file)
-        
-        headers = identify_sections(template_text)
-        notes_sections = match_notes_to_sections(headers, notes_text)
 
         if st.button("Generate Report"):
-            merged_text = merge_notes_into_template(template_text, notes_sections)
-            pdf_output = create_pdf(merged_text)
+            report_text = create_report_with_openai(template_text, notes_text)
+            pdf_output = create_pdf(report_text)
             
             st.download_button(
                 label="Download Report",
