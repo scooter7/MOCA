@@ -24,7 +24,7 @@ def create_report_with_openai(template_text, notes_text):
         "Please generate a cohesive report by placing the notes into the appropriate sections of the template and adding any necessary additional language."
     )
     
-    response = openai.Completion.create(
+    response = openai.ChatCompletion.create(
         engine="text-davinci-003", # Use the appropriate engine
         prompt=prompt,
         max_tokens=1500  # Adjust max_tokens based on your needs
