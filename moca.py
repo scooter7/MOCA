@@ -1,20 +1,19 @@
 import streamlit as st
-import re
-from PyPDF2 import PdfReader
+import pdfplumber
 from io import BytesIO
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from fpdf import FPDF
 
-# Function to extract text from PDF incrementally
+# Function to extract text from PDF using pdfplumber
 def extract_text_from_pdf(pdf_file):
-    pdf_reader = PdfReader(pdf_file)
     text = []
-    for page in pdf_reader.pages:
-        text.append(page.extract_text())
+    with pdfplumber.open(pdf_file) as pdf:
+        for page in pdf.pages:
+            text.append(page.extract_text())
     return "\n".join(text)
 
 # Function to identify sections in the template
 def identify_sections(template_text):
+    # Assuming headers are in all caps or followed by a newline
     headers = re.findall(r'([A-Z ]+)\n', template_text)
     return headers
 
@@ -39,21 +38,34 @@ def merge_notes_into_template(template_text, notes_sections):
         merged_text = merged_text.replace(header, header + "\n" + notes)
     return merged_text
 
-# Function to create a downloadable PDF
+# Function to create a downloadable PDF using fpdf
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, 'Generated Report', 0, 1, 'C')
+
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, title, 0, 1, 'L')
+        self.ln(10)
+
+    def chapter_body(self, body):
+        self.set_font('Arial', '', 12)
+        self.multi_cell(0, 10, body)
+        self.ln()
+
 def create_pdf(text):
+    pdf = PDF()
+    pdf.add_page()
+    for line in text.split("\n"):
+        if line.strip() == "":
+            continue
+        if line.isupper():
+            pdf.chapter_title(line)
+        else:
+            pdf.chapter_body(line)
     output = BytesIO()
-    c = canvas.Canvas(output, pagesize=letter)
-    width, height = letter
-
-    lines = text.split("\n")
-    for line in lines:
-        c.drawString(72, height - 72, line)
-        height -= 15
-        if height < 72:  # Create new page if the current page is filled
-            c.showPage()
-            height = letter[1] - 72
-
-    c.save()
+    pdf.output(output)
     output.seek(0)
     return output
 
@@ -85,4 +97,3 @@ if template_file and notes_file:
             )
     except Exception as e:
         st.error(f"An error occurred: {e}")
-
