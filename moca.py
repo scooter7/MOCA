@@ -1,20 +1,20 @@
 import streamlit as st
 import re
-from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2 import PdfReader
 from io import BytesIO
+from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PdfReader(pdf_file)
-    text = ""
+    text = []
     for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+        text.append(page.extract_text())
+    return "\n".join(text)
 
 # Function to identify sections in the template
 def identify_sections(template_text):
-    # Assuming headers are in all caps or followed by a newline
     headers = re.findall(r'([A-Z ]+)\n', template_text)
     return headers
 
@@ -42,10 +42,16 @@ def merge_notes_into_template(template_text, notes_sections):
 # Function to create a downloadable PDF
 def create_pdf(text):
     output = BytesIO()
-    c = canvas.Canvas(output)
+    c = canvas.Canvas(output, pagesize=letter)
+    width, height = letter
+
     for line in text.split("\n"):
-        c.drawString(10, 800, line)
-        c.showPage()
+        c.drawString(72, height - 72, line)
+        height -= 15
+        if height < 72:  # Create new page if the current page is filled
+            c.showPage()
+            height = letter[1] - 72
+
     c.save()
     output.seek(0)
     return output
